@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voice AI Assistant Demo</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+        button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; }
+        #status { margin-top: 20px; font-weight: bold; color: gray; }
+    </style>
+</head>
+<body>
+
+    <h1>🎙️ Live Voice Assistant</h1>
+    <p>A WebRTC/WebSocket Assessment Demo</p>
+
+    <button id="startBtn">Connect & Start Speaking</button>
+    <button id="stopBtn" disabled>Stop</button>
+
+    <div id="status">Status: Disconnected</div>
+
+    <script>
+        let socket;
+        let mediaRecorder;
+        let audioContext;
+
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusDiv = document.getElementById('status');
+
+        startBtn.onclick = async () => {
+            // 1. Connect to Django Channels WebSocket
+            socket = new WebSocket('ws://localhost:8000/ws/voice-chat/');
+            
+            socket.onopen = async () => {
+                statusDiv.innerText = "Status: Connected. Listening...";
+                statusDiv.style.color = "green";
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+
+                // 2. Get Microphone Access
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+                // 3. Every 250ms, send the audio chunk to Django over the WebSocket
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+                        socket.send(event.data);
+                    }
+                };
+                mediaRecorder.start(250); 
+            };
+
+            // 4. When Django sends audio back, play it immediately!
+            socket.onmessage = async (event) => {
+                if (event.data instanceof Blob) {
+                    statusDiv.innerText = "Status: AI is speaking...";
+                    const audioUrl = URL.createObjectURL(event.data);
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+                    audio.onended = () => { statusDiv.innerText = "Status: Connected. Listening..."; };
+                } else {
+                    console.log("Server Msg:", event.data); // e.g. "Transcript: Hello!"
+                }
+            };
+
+            socket.onclose = () => {
+                statusDiv.innerText = "Status: Disconnected.";
+                statusDiv.style.color = "gray";
+                if(mediaRecorder) mediaRecorder.stop();
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            };
+        };
+
+        stopBtn.onclick = () => {
+            if (socket) socket.close();
+        };
+    </script>
+
+</body>
+</html>
