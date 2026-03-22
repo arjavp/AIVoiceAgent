@@ -144,14 +144,16 @@ ASGI_APPLICATION = "config.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+import os
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'voice_agent',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.environ.get('DJANGO_DATABASE_NAME', 'voice_agent'),
+        'USER': os.environ.get('DJANGO_DATABASE_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DJANGO_DATABASE_PASSWORD', 'postgres'),
+        'HOST': os.environ.get('DJANGO_DATABASE_HOST', 'localhost'),
+        'PORT': os.environ.get('DJANGO_DATABASE_PORT', '5432'),
     }
 }
 
@@ -203,11 +205,11 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [(os.environ.get('REDIS_HOST', '127.0.0.1'), 6379)],
         },
     },
 }
 
 
 # Celery Configuration
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')

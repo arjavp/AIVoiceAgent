@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  db:
+    image: ankane/pgvector:v0.5.1
+    container_name: voice_agent_db
+    environment:
+      POSTGRES_DB: voice_agent
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGPASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: voice_agent_redis
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    container_name: voice_agent_web
+    command: web
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - DJANGO_DATABASE_HOST=db
+      - DJANGO_DATABASE_PORT=5432
+      - DJANGO_DATABASE_NAME=voice_agent
+      - DJANGO_DATABASE_USER=postgres
+      - DJANGO_DATABASE_PASSWORD=postgres
+      - REDIS_HOST=redis
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    build: .
+    container_name: voice_agent_worker
+    command: worker
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - DJANGO_DATABASE_HOST=db
+      - DJANGO_DATABASE_PORT=5432
+      - DJANGO_DATABASE_NAME=voice_agent
+      - DJANGO_DATABASE_USER=postgres
+      - DJANGO_DATABASE_PASSWORD=postgres
+      - REDIS_HOST=redis
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  agent:
+    build: .
+    container_name: voice_agent_agent
+    command: agent
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - DJANGO_DATABASE_HOST=db
+      - DJANGO_DATABASE_PORT=5432
+      - DJANGO_DATABASE_NAME=voice_agent
+      - DJANGO_DATABASE_USER=postgres
+      - DJANGO_DATABASE_PASSWORD=postgres
+      - REDIS_HOST=redis
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:

@@ -1,0 +1,31 @@
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+bin/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.env
+.git
+.gitignore
+db.sqlite3
+media
+static
+# Ignore these if desired, but requirements.txt MUST be available to Docker
+# Dockerfile
+# docker-compose.yml
